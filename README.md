@@ -38,7 +38,7 @@ Dependency specific issues
 	`raise NoBackendError() ` <br>
     `audioread.NoBackendError` :
     install [ffmpeg](https://ffmpeg.zeranoe.com/builds/) and <br>
-    add environment variable
+    add environment variable for ffmpeg
 
 Example
 -------------------
