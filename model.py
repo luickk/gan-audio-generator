@@ -8,10 +8,12 @@ from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 from optparse import OptionParser
+from data_proc.data_proc import get_audio_from_files
+from sys import getsizeof
 
 import matplotlib.pyplot as plt
-
 import numpy as np
+#np.set_printoptions(threshold=np.nan)
 
 # ACGan by https://github.com/eriklindernoren/Keras-GAN/blob/master/acgan
 def build_generator(latent_dim, channels, num_classes):
@@ -81,13 +83,15 @@ def build_discriminator(img_shape, num_classes):
 
 def train(generator, discriminator, combined, epochs, batch_size=128, sample_interval=50):
 
-    # Load the dataset
-    (X_train, y_train), (_, _) = mnist.load_data()
+    parent_dir = 'cv-valid-train'
+    tr_sub_dirs_training = 'data'
+    sr_training, y_train, X_train = get_audio_from_files(batch_size, parent_dir, tr_sub_dirs_training)
 
     # Rescale -1 to 1
-    X_train = (X_train.astype(np.float32) - 127.5) / 127.5
-    X_train = np.expand_dims(X_train, axis=3)
+    #X_train = (X_train.astype(np.float32) - 127.5) / 127.5
+    #X_train = np.expand_dims(X_train, axis=3)
     y_train = y_train.reshape(-1, 1)
+
 
     half_batch = int(batch_size / 2)
 
@@ -99,8 +103,9 @@ def train(generator, discriminator, combined, epochs, batch_size=128, sample_int
 
         # Select a random half batch of images
         idx = np.random.randint(0, X_train.shape[0], half_batch)
+        print(idx)
         imgs = X_train[idx]
-
+        print(imgs)
         noise = np.random.normal(0, 1, (half_batch, 100))
 
         # The labels of the digits that the generator tries to create an

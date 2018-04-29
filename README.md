@@ -1,7 +1,7 @@
 Generative Adversarial Network Audio generator
 ===================
 
-The aim is to generate audio based on the [Common Voice](https://voice.mozilla.org/en/data) dataset using a 
+The aim is to generate audio based on the [Common Voice](https://voice.mozilla.org/en/data) dataset using a
 [Generative adversarial network](https://en.wikipedia.org/wiki/Generative_adversarial_network).
 
 ----------
@@ -20,6 +20,7 @@ The aim is to generate audio based on the [Common Voice](https://voice.mozilla.o
 	> - python main.py -u <model ID from trained model here> -i <file name> -m label
 
 
+----------
 
 Dependencies
 -------------------
@@ -27,6 +28,17 @@ Dependencies
 > - numpy
 > - Keras
 > - matplotlib
+> - librosa
+
+Dependency specific issues
+-------------------
+
+ - librosa
+
+	`raise NoBackendError() ` <br>
+    `audioread.NoBackendError` :
+    install [ffmpeg](https://ffmpeg.zeranoe.com/builds/) and <br>
+    add environment variable
 
 Example
 -------------------

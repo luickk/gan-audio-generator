@@ -9,6 +9,9 @@ from keras.models import Sequential, Model
 from keras.optimizers import Adam
 from model import build_discriminator, build_generator, train, save_model
 from optparse import OptionParser
+import uuid
+from tqdm import tqdm
+import librosa
 
 import matplotlib.pyplot as plt
 
