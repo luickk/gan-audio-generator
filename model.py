@@ -93,6 +93,7 @@ def train(generator, discriminator, combined, epochs, batch_size=128, sample_int
     y_train = y_train.reshape(-1, 1)
 
     print('Size: ' + str(getsizeof(X_train)))
+    print('Shape: ' + str(X_train.shape))
 
 
     half_batch = int(batch_size / 2)

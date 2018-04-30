@@ -13,12 +13,15 @@ from subprocess import check_output
 plt.style.use('ggplot')
 
 def frame_generator(sr, audio, frame_size):
+    temp_data = []
     for i, rows in enumerate(audio):
         if i % frame_size == 0:
-            print(i)
+            frame = audio[i-frame_size:i]
+            if np.array(frame).shape[0] == frame_size:
+                temp_data.append(frame)
+    return np.array(temp_data)
 
-
-def get_audio_from_files(training_amount, parent_dir, sub_dirs):
+def get_audio_from_files(batch_size, parent_dir, sub_dirs):
 
     file_counter = 0
     audio_files = []
@@ -28,15 +31,17 @@ def get_audio_from_files(training_amount, parent_dir, sub_dirs):
         label = ntpath.basename(fn)
         file_counter += 1
         sr, audio = get_audio(fn);
-        #audio_files.append(np.array(audio))
         audio_files = np.concatenate([audio_files, audio], axis=0)
-        #audio_files = np.concatenate((np.array(audio_files), np.array(audio)))
         label_files.append(1)
-        print('Reading: ' + str(file_counter) + ' of ' + str(training_amount))
-        if file_counter==training_amount: break;
+        print('Reading: ' + str(file_counter) + ' of ' + str(batch_size))
+        if file_counter==batch_size: break;
 
-    frame_generator(sr, audio, 100)
-    return sr, np.array(label_files), np.array(audio_files)
+    # divide audio length by batch size(1 = 1 .wav file)
+    frame_size = round(audio_files.shape[0] / batch_size)
+    # returns array with audio samples
+    frames = frame_generator(sr, audio_files, frame_size)
+
+    return sr, np.array(label_files), frames
 
 def get_audio(filename):
     sr, audio = read(filename)
