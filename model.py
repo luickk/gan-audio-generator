@@ -92,6 +92,8 @@ def train(generator, discriminator, combined, epochs, batch_size=128, sample_int
     #X_train = np.expand_dims(X_train, axis=3)
     y_train = y_train.reshape(-1, 1)
 
+    print('Size: ' + str(getsizeof(X_train)))
+
 
     half_batch = int(batch_size / 2)
 
@@ -103,9 +105,7 @@ def train(generator, discriminator, combined, epochs, batch_size=128, sample_int
 
         # Select a random half batch of images
         idx = np.random.randint(0, X_train.shape[0], half_batch)
-        print(idx)
         imgs = X_train[idx]
-        print(imgs)
         noise = np.random.normal(0, 1, (half_batch, 100))
 
         # The labels of the digits that the generator tries to create an

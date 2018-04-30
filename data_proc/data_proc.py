@@ -12,6 +12,11 @@ from subprocess import check_output
 
 plt.style.use('ggplot')
 
+def frame_generator(sr, audio, frame_size):
+    for i, rows in enumerate(audio):
+        if i % frame_size == 0:
+            print(i)
+
 
 def get_audio_from_files(training_amount, parent_dir, sub_dirs):
 
@@ -23,13 +28,14 @@ def get_audio_from_files(training_amount, parent_dir, sub_dirs):
         label = ntpath.basename(fn)
         file_counter += 1
         sr, audio = get_audio(fn);
-        audio_files.append(np.array(audio))
-        #audio_files = np.concatenate([audio_files, audio], axis=0)
+        #audio_files.append(np.array(audio))
+        audio_files = np.concatenate([audio_files, audio], axis=0)
         #audio_files = np.concatenate((np.array(audio_files), np.array(audio)))
-        label_files.append(int(label.split('-')[1].split('.')[0]))
+        label_files.append(1)
         print('Reading: ' + str(file_counter) + ' of ' + str(training_amount))
         if file_counter==training_amount: break;
 
+    frame_generator(sr, audio, 100)
     return sr, np.array(label_files), np.array(audio_files)
 
 def get_audio(filename):
