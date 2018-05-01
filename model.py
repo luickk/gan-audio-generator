@@ -2,7 +2,7 @@ from __future__ import print_function, division
 
 from keras.datasets import mnist
 from keras.layers import Input, Dense, Reshape, Flatten, Dropout, multiply
-from keras.layers import BatchNormalization, Activation, Embedding, ZeroPadding2D
+from keras.layers import BatchNormalization, Activation, Embedding, ZeroPadding2D, LSTM
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
@@ -13,9 +13,7 @@ from sys import getsizeof
 
 import matplotlib.pyplot as plt
 import numpy as np
-#np.set_printoptions(threshold=np.nan)
 
-# ACGan by https://github.com/eriklindernoren/Keras-GAN/blob/master/acgan
 def build_generator(latent_dim, channels, num_classes):
 
     model = Sequential()
@@ -46,6 +44,31 @@ def build_generator(latent_dim, channels, num_classes):
     img = model(model_input)
 
     return Model([noise, label], img)
+
+def build_audio_generator(audio_shape, num_classes, latent_dim):
+
+    model = Sequential()
+    model.add(LSTM(512, input_shape=(audio_shape[1], audio_shape[2]), return_sequences=True))
+    model.add(Dropout(0.3))
+    model.add(LSTM(512, return_sequences=True))
+    model.add(Dropout(0.3))
+    model.add(LSTM(512))
+    model.add(Dense(256))
+    model.add(Dropout(0.3))
+    model.add(Dense(num_classes))
+    model.add(Activation('softmax'))
+
+    model.summary()
+
+    noise = Input(shape=(latent_dim,))
+    label = Input(shape=(1,), dtype='int32')
+
+    label_embedding = Flatten()(Embedding(num_classes, 100)(label))
+    model_input = multiply([noise, label_embedding])
+
+    sound = model(model_input)
+
+    return Model([noise, label], sound)
 
 def build_discriminator(img_shape, num_classes):
 
@@ -81,20 +104,15 @@ def build_discriminator(img_shape, num_classes):
 
     return Model(img, [validity, label])
 
-def train(generator, discriminator, combined, epochs, batch_size=128, sample_interval=50):
-
+def pre_process_data(batch_size):
     parent_dir = 'cv-valid-train'
     tr_sub_dirs_training = 'data'
     sr_training, y_train, X_train = get_audio_from_files(batch_size, parent_dir, tr_sub_dirs_training)
 
-    # Rescale -1 to 1
-    #X_train = (X_train.astype(np.float32) - 127.5) / 127.5
-    #X_train = np.expand_dims(X_train, axis=3)
     y_train = y_train.reshape(-1, 1)
+    return sr_training, y_train, X_train
 
-    print('Size: ' + str(getsizeof(X_train)))
-    print('Shape: ' + str(X_train.shape))
-
+def train(sr_training, y_train, X_train, generator, discriminator, combined, epochs, batch_size):
 
     half_batch = int(batch_size / 2)
 
