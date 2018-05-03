@@ -7,7 +7,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
-from model import build_discriminator, build_generator, train, save_model, pre_process_data, build_audio_generator
+from model import build_discriminator, build_generator, train, save_model, pre_process_data, build_audio_generator, build_audio_discriminator
 from optparse import OptionParser
 import uuid
 from tqdm import tqdm
@@ -46,7 +46,7 @@ def main():
         latent_dim = 100
 
         # reshaping array
-        X_train = X_train_raw.reshape(1,X_train_raw.shape[0],X_train_raw.shape[1])
+        X_train = X_train_raw.reshape(X_train_raw.shape[0],X_train_raw.shape[1])
 
         print(X_train.shape)
 
@@ -61,10 +61,13 @@ def main():
         discriminator = build_discriminator(img_shape, num_classes)
         discriminator.compile(loss=losses, optimizer=optimizer, metrics=['accuracy'])
 
+        # Build and compile the discriminator
+        audio_discriminator = build_audio_discriminator(audio_shape, num_classes)
+        audio_discriminator.compile(loss=losses, optimizer=optimizer, metrics=['accuracy'])
 
         # Build the generator
         generator = build_generator(latent_dim, channels, num_classes)
-        audio_generator = build_audio_generator(audio_shape, num_classes, latent_dim)
+        audio_generator = build_audio_generator(latent_dim, num_classes)
 
         #model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
@@ -74,12 +77,18 @@ def main():
         label = Input(shape=(1,))
         img = generator([noise, label])
 
+        audio = generator([noise, label])
+
         # For the combined model we will only train the generator
         discriminator.trainable = False
+
+        audio_discriminator.trainable = False
 
         # The discriminator takes generated image as input and determines validity
         # and the label of that image
         valid, target_label = discriminator(img)
+        #print(audio)
+        audio_valid, audio_target_label = audio_discriminator(audio)
 
         # The combined model  (stacked generator and discriminator) takes
         # noise as input => generates images => determines validity

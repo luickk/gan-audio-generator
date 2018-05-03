@@ -2,9 +2,9 @@ from __future__ import print_function, division
 
 from keras.datasets import mnist
 from keras.layers import Input, Dense, Reshape, Flatten, Dropout, multiply
-from keras.layers import BatchNormalization, Activation, Embedding, ZeroPadding2D, LSTM
+from keras.layers import BatchNormalization, Activation, Embedding, ZeroPadding2D, LSTM, MaxPooling2D, Conv3D, MaxPooling3D, Conv1D, MaxPooling1D
 from keras.layers.advanced_activations import LeakyReLU
-from keras.layers.convolutional import UpSampling2D, Conv2D, Conv1D, MaxPooling1D
+from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 from optparse import OptionParser
@@ -61,14 +61,16 @@ def build_audio_generator(latent_dim, num_classes):
 
     model.summary()
 
-    noise = Input(shape=(None, latent_dim,))
-    label = Input(shape=(1,), dtype='int32')
-    label_embedding = Flatten()(Embedding(num_classes, 100)(label))
-    model_input = multiply([noise, label_embedding])
+    img = Input(shape=img_shape)
 
-    sound = model(model_input)
+    # Extract feature representation
+    features = model(img)
 
-    return Model([noise, label], sound)
+    # Determine validity and label of the image
+    validity = Dense(1, activation="sigmoid")(features)
+    label = Dense(num_classes+1, activation="softmax")(features)
+
+    return Model(img, [validity, label])
 
 def build_discriminator(img_shape, num_classes):
 
