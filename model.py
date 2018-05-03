@@ -46,28 +46,29 @@ def build_generator(latent_dim, channels, num_classes):
 
     return Model([noise, label], img)
 
-def build_audio_generator(num_classes, audio_shape):
+def build_audio_generator(latent_dim, num_classes, audio_shape):
 
     model = Sequential()
-    model.add(LSTM(517, input_dim=audio_shape[1], return_sequences=True))
+    model.add(LSTM(512, input_dim=latent_dim, return_sequences=True))
     model.add(Dropout(0.3))
     model.add(LSTM(512, return_sequences=True))
     model.add(Dropout(0.3))
     model.add(LSTM(512))
     model.add(Dense(256))
     model.add(Dropout(0.3))
-    model.add(Dense(num_classes))
-    model.add(Activation('tanh'))
+    model.add(Dense(audio_shape[1]))
+    model.add(Activation('softmax'))
 
     model.summary()
 
-    #noise = Input(shape=audio_shape)
-    noise = Input(shape=(None, audio_shape[1],))
+    noise = Input(shape=(None, latent_dim,))
+    label = Input(shape=(1,), dtype='int32')
+    label_embedding = Flatten()(Embedding(num_classes, 100)(label))
+    model_input = multiply([noise, label_embedding])
 
-    sound = model(noise)
+    sound = model(model_input)
 
-
-    return Model([noise], sound)
+    return Model([noise, label], sound)
 
 def build_discriminator(img_shape, num_classes):
 
@@ -128,7 +129,7 @@ def build_audio_discriminator(audio_shape, num_classes):
     validity = Dense(1, activation="sigmoid")(features)
     label = Dense(num_classes+1, activation="softmax")(features)
 
-    return Model(audio, [validity])
+    return Model(audio, [validity, label])
 
 def pre_process_data(batch_size):
     parent_dir = 'cv-valid-train'
