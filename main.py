@@ -12,6 +12,7 @@ from optparse import OptionParser
 import uuid
 from tqdm import tqdm
 import librosa
+import tensorflow as tf
 
 import matplotlib.pyplot as plt
 
@@ -50,8 +51,7 @@ def main():
 
         print(X_train.shape)
 
-        audio_shape = X_train.shape
-
+        audio_shape = (X_train.shape[1],1)
 
         optimizer = Adam(0.0002, 0.5)
         losses = ['binary_crossentropy', 'sparse_categorical_crossentropy']
@@ -79,12 +79,6 @@ def main():
 
         audio = audio_generator([noise, label])
 
-        print('Audio: '+ str(audio))
-        print('Audio shape: ' + str(audio.shape))
-
-        print('IMG: '+str(img))
-        print('IMG shape: ' + str(img.shape))
-
         # For the combined model we will only train the generator
         discriminator.trainable = False
 
@@ -92,8 +86,10 @@ def main():
 
         # The discriminator takes generated image as input and determines validity
         # and the label of that image
+        print(img)
+        print(audio)
+        audio = tf.reshape(audio, [-1, 214161, 1])
         valid, target_label = discriminator(img)
-        #print(audio)
         audio_valid, audio_target_label = audio_discriminator(audio)
 
         # The combined model  (stacked generator and discriminator) takes

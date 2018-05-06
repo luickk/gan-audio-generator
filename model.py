@@ -10,7 +10,7 @@ from keras.optimizers import Adam
 from optparse import OptionParser
 from data_proc.data_proc import get_audio_from_files
 from sys import getsizeof
-
+import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -56,8 +56,8 @@ def build_audio_generator(latent_dim, num_classes, audio_shape):
     model.add(LSTM(512))
     model.add(Dense(256))
     model.add(Dropout(0.3))
-    model.add(Dense(audio_shape[1]))
-    model.add(Activation('softmax'))
+    model.add(Dense(audio_shape[0]))
+    model.add(Activation('tanh'))
 
     model.summary()
 
@@ -92,7 +92,7 @@ def build_discriminator(img_shape, num_classes):
 
     model.add(Flatten())
     model.summary()
-
+    print(img_shape)
     img = Input(shape=img_shape)
 
     # Extract feature representation
@@ -105,21 +105,19 @@ def build_discriminator(img_shape, num_classes):
     return Model(img, [validity, label])
 
 def build_audio_discriminator(audio_shape, num_classes):
-
+    print(audio_shape)
     model = Sequential()
 
-    model.add(Conv1D(32, kernel_size=(2), activation='relu', input_shape=audio_shape))
+    model.add(Conv1D(32, kernel_size=(2), padding="same", input_shape=audio_shape))
     model.add(MaxPooling1D(pool_size=(2)))
     model.add(Dropout(0.25))
-    model.add(Flatten())
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.25))
-    model.add(Dense(3, activation='softmax'))
+    model.add(Dense(128))
 
     model.summary()
 
     #model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(), metrics=['accuracy'])
-
     audio = Input(shape=audio_shape)
 
     # Extract feature representation
