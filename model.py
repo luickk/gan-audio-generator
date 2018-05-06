@@ -47,7 +47,6 @@ def build_generator(latent_dim, channels, num_classes):
     return Model([noise, label], img)
 
 def build_audio_generator(latent_dim, num_classes, audio_shape):
-
     model = Sequential()
     model.add(LSTM(512, input_dim=latent_dim, return_sequences=True))
     model.add(Dropout(0.3))
@@ -58,6 +57,7 @@ def build_audio_generator(latent_dim, num_classes, audio_shape):
     model.add(Dropout(0.3))
     model.add(Dense(audio_shape[0]))
     model.add(Activation('tanh'))
+    model.add(Reshape((audio_shape[0], 1)))
 
     model.summary()
 
@@ -149,15 +149,16 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
 
         # Select a random half batch of images
         idx = np.random.randint(0, X_train.shape[0], half_batch)
+        audio = X_train[idx]
         imgs = X_train[idx]
         noise = np.random.normal(0, 1, (half_batch, 100))
 
         # The labels of the digits that the generator tries to create an
         # image representation of
-        sampled_labels = np.random.randint(0, 10, half_batch).reshape(-1, 1)
+        sampled_labels = 1
 
         # Generate a half batch of new images
-        gen_imgs = generator.predict([noise, sampled_labels])
+        gen_imgs = generator.predict([noise, (sampled_labels,)])
 
         valid = np.ones((half_batch, 1))
         fake = np.zeros((half_batch, 1))

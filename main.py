@@ -48,9 +48,6 @@ def main():
 
         # reshaping array
         X_train = X_train_raw.reshape(X_train_raw.shape[0],X_train_raw.shape[1])
-
-        print(X_train.shape)
-
         audio_shape = (X_train.shape[1],1)
 
         optimizer = Adam(0.0002, 0.5)
@@ -75,6 +72,7 @@ def main():
         # and generates the corresponding digit of that label
         noise = Input(shape=(None, latent_dim,))
         label = Input(shape=(1,))
+
         img = generator([noise, label])
 
         audio = audio_generator([noise, label])
@@ -86,19 +84,29 @@ def main():
 
         # The discriminator takes generated image as input and determines validity
         # and the label of that image
-        print(img)
         print(audio)
-        audio = tf.reshape(audio, [-1, 214161, 1])
+        #audio = tf.reshape(audio, [-1, audio_shape[0], 1])
+        #img = tf.reshape(img, [-1, 28, 28, 1])
+        print(img.shape)
         valid, target_label = discriminator(img)
         audio_valid, audio_target_label = audio_discriminator(audio)
 
+        print(audio_valid)
+        print(audio_target_label)
+        print(valid)
+        print(target_label)
         # The combined model  (stacked generator and discriminator) takes
         # noise as input => generates images => determines validity
         combined = Model([noise, label], [valid, target_label])
         combined.compile(loss=losses, optimizer=optimizer)
 
+        # The combined model  (stacked generator and discriminator) takes
+        # noise as input => generates images => determines validity
+        audio_combined = Model([noise, label], [audio_valid, audio_target_label])
+        audio_combined.compile(loss=losses, optimizer=optimizer)
+
         #14000
-        train(sr_training, y_train, X_train, generator, discriminator, combined, epochs, batch_size)
+        train(sr_training, y_train, X_train, audio_generator, audio_discriminator, audio_combined, epochs, batch_size)
 
 
 if __name__ == '__main__':
