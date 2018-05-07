@@ -27,7 +27,7 @@ def main():
     # Only required for labeling - Enter Model id here
     parser.add_option('-u', '--uid', help='enter model id here')
 
-    batch_size = 32
+    batch_size = 2
 
     epochs = 100
 
@@ -38,74 +38,40 @@ def main():
 
         num_classes = 1
 
-        # Input shape
-        img_rows = 28
-        img_cols = 28
-        channels = 1
-        img_shape = (img_rows, img_cols, channels)
-        #num_classes = 10
         latent_dim = 100
 
         # reshaping array
-        X_train = X_train_raw.reshape(X_train_raw.shape[0],X_train_raw.shape[1])
+        X_train = X_train_raw.reshape(X_train_raw.shape[0],X_train_raw.shape[1], 1)
         audio_shape = (X_train.shape[1],1)
 
         optimizer = Adam(0.0002, 0.5)
-        losses = ['binary_crossentropy', 'sparse_categorical_crossentropy']
-
-
-        # Build and compile the discriminator
-        discriminator = build_discriminator(img_shape, num_classes)
-        discriminator.compile(loss=losses, optimizer=optimizer, metrics=['accuracy'])
+        losses = ['binary_crossentropy']
 
         # Build and compile the discriminator
         audio_discriminator = build_audio_discriminator(audio_shape, num_classes)
         audio_discriminator.compile(loss=losses, optimizer=optimizer, metrics=['accuracy'])
 
         # Build the generator
-        generator = build_generator(latent_dim, channels, num_classes)
         audio_generator = build_audio_generator(latent_dim, num_classes, audio_shape)
 
-        #model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
-
         # The generator takes noise and the target label as input
-        # and generates the corresponding digit of that label
         noise = Input(shape=(None, latent_dim,))
-        label = Input(shape=(1,))
 
-        img = generator([noise, label])
-
-        audio = audio_generator([noise, label])
+        audio = audio_generator([noise])
 
         # For the combined model we will only train the generator
-        discriminator.trainable = False
-
         audio_discriminator.trainable = False
 
         # The discriminator takes generated image as input and determines validity
         # and the label of that image
-        print(audio)
-        #audio = tf.reshape(audio, [-1, audio_shape[0], 1])
-        #img = tf.reshape(img, [-1, 28, 28, 1])
-        print(img.shape)
-        valid, target_label = discriminator(img)
-        audio_valid, audio_target_label = audio_discriminator(audio)
 
-        print(audio_valid)
-        print(audio_target_label)
-        print(valid)
-        print(target_label)
-        # The combined model  (stacked generator and discriminator) takes
-        # noise as input => generates images => determines validity
-        combined = Model([noise, label], [valid, target_label])
-        combined.compile(loss=losses, optimizer=optimizer)
+        audio_valid = audio_discriminator(audio)
 
         # The combined model  (stacked generator and discriminator) takes
-        # noise as input => generates images => determines validity
-        audio_combined = Model([noise, label], [audio_valid, audio_target_label])
-        audio_combined.compile(loss=losses, optimizer=optimizer)
+        # noise as input => generates audio => determines validity
+        audio_combined = Model([noise], [audio_valid])
+        audio_combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
-        #14000
         train(sr_training, y_train, X_train, audio_generator, audio_discriminator, audio_combined, epochs, batch_size)
 
 

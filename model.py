@@ -14,38 +14,6 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
 
-def build_generator(latent_dim, channels, num_classes):
-
-    model = Sequential()
-
-    model.add(Dense(128 * 7 * 7, activation="relu", input_dim=latent_dim))
-    model.add(Reshape((7, 7, 128)))
-    model.add(BatchNormalization(momentum=0.8))
-    model.add(UpSampling2D())
-    model.add(Conv2D(128, kernel_size=3, padding="same"))
-    model.add(Activation("relu"))
-    model.add(BatchNormalization(momentum=0.8))
-    model.add(UpSampling2D())
-    model.add(Conv2D(64, kernel_size=3, padding="same"))
-    model.add(Activation("relu"))
-    model.add(BatchNormalization(momentum=0.8))
-    model.add(Conv2D(channels, kernel_size=3, padding='same'))
-    model.add(Activation("tanh"))
-
-    model.summary()
-
-    noise = Input(shape=(latent_dim,))
-    label = Input(shape=(1,), dtype='int32')
-
-
-    label_embedding = Flatten()(Embedding(num_classes, 100)(label))
-
-    model_input = multiply([noise, label_embedding])
-
-    img = model(model_input)
-
-    return Model([noise, label], img)
-
 def build_audio_generator(latent_dim, num_classes, audio_shape):
     model = Sequential()
     model.add(LSTM(512, input_dim=latent_dim, return_sequences=True))
@@ -62,47 +30,13 @@ def build_audio_generator(latent_dim, num_classes, audio_shape):
     model.summary()
 
     noise = Input(shape=(None, latent_dim,))
-    label = Input(shape=(1,), dtype='int32')
-    label_embedding = Flatten()(Embedding(num_classes, 100)(label))
-    model_input = multiply([noise, label_embedding])
+    #label = Input(shape=(1,), dtype='int32')
+    #label_embedding = Flatten()(Embedding(num_classes, 100)(label))
+    #model_input = multiply([noise, label_embedding])
 
-    sound = model(model_input)
+    sound = model(noise)
 
-    return Model([noise, label], sound)
-
-def build_discriminator(img_shape, num_classes):
-
-    model = Sequential()
-
-    model.add(Conv2D(16, kernel_size=3, strides=2, input_shape=img_shape, padding="same"))
-    model.add(LeakyReLU(alpha=0.2))
-    model.add(Dropout(0.25))
-    model.add(Conv2D(32, kernel_size=3, strides=2, padding="same"))
-    model.add(ZeroPadding2D(padding=((0,1),(0,1))))
-    model.add(LeakyReLU(alpha=0.2))
-    model.add(Dropout(0.25))
-    model.add(BatchNormalization(momentum=0.8))
-    model.add(Conv2D(64, kernel_size=3, strides=2, padding="same"))
-    model.add(LeakyReLU(alpha=0.2))
-    model.add(Dropout(0.25))
-    model.add(BatchNormalization(momentum=0.8))
-    model.add(Conv2D(128, kernel_size=3, strides=1, padding="same"))
-    model.add(LeakyReLU(alpha=0.2))
-    model.add(Dropout(0.25))
-
-    model.add(Flatten())
-    model.summary()
-    print(img_shape)
-    img = Input(shape=img_shape)
-
-    # Extract feature representation
-    features = model(img)
-
-    # Determine validity and label of the image
-    validity = Dense(1, activation="sigmoid")(features)
-    label = Dense(num_classes+1, activation="softmax")(features)
-
-    return Model(img, [validity, label])
+    return Model([noise], sound)
 
 def build_audio_discriminator(audio_shape, num_classes):
     print(audio_shape)
@@ -125,9 +59,9 @@ def build_audio_discriminator(audio_shape, num_classes):
 
     # Determine validity and label of the image
     validity = Dense(1, activation="sigmoid")(features)
-    label = Dense(num_classes+1, activation="softmax")(features)
+    #label = Dense(num_classes+1, activation="softmax")(features)
 
-    return Model(audio, [validity, label])
+    return Model(audio, [validity])
 
 def pre_process_data(batch_size):
     parent_dir = 'cv-valid-train'
@@ -151,25 +85,27 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         idx = np.random.randint(0, X_train.shape[0], half_batch)
         audio = X_train[idx]
         imgs = X_train[idx]
-        noise = np.random.normal(0, 1, (half_batch, 100))
+        #noise = Input(shape=(None, latent_dim,))
+        noise = np.random.normal(0, 1, (1, half_batch, 100))
 
         # The labels of the digits that the generator tries to create an
         # image representation of
         sampled_labels = 1
 
         # Generate a half batch of new images
-        gen_imgs = generator.predict([noise, (sampled_labels,)])
+        gen_imgs = generator.predict([noise])
 
-        valid = np.ones((half_batch, 1))
-        fake = np.zeros((half_batch, 1))
+        valid = np.ones((half_batch, 128596, 1))
+        fake = np.zeros((half_batch, 128596, 1))
 
         # Image labels. 0-9 if image is valid or 10 if it is generated (fake)
         img_labels = y_train[idx]
         fake_labels = 10 * np.ones(half_batch).reshape(-1, 1)
 
+
         # Train the discriminator
-        d_loss_real = discriminator.train_on_batch(imgs, [valid, img_labels])
-        d_loss_fake = discriminator.train_on_batch(gen_imgs, [fake, fake_labels])
+        d_loss_real = discriminator.train_on_batch(imgs, valid)
+        d_loss_fake = discriminator.train_on_batch(gen_imgs, fake)
         d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
 
         # ---------------------
@@ -177,21 +113,27 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         # ---------------------
 
         # Sample generator input
-        noise = np.random.normal(0, 1, (batch_size, 100))
+        #noise = np.random.normal(0, 1, (batch_size, 100))
+        noise = np.random.normal(0, 1, (1, batch_size, 100))
 
-        valid = np.ones((batch_size, 1))
+        #valid = np.ones((batch_size, 1))
+        valid = np.ones((1, 128596, 1))
         # Generator wants discriminator to label the generated images as the intended
         # digits
-        sampled_labels = np.random.randint(0, 10, batch_size).reshape(-1, 1)
+        #sampled_labels = np.random.randint(0, 10, batch_size).reshape(-1, 1)
 
+        print(noise.shape)
+        print(valid.shape)
         # Train the generator
-        g_loss = combined.train_on_batch([noise, sampled_labels], [valid, sampled_labels])
+        g_loss = combined.train_on_batch(noise, valid)
 
         # Plot the progress
-        print ("%d [D loss: %f, acc.: %.2f%%, op_acc: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[3], 100*d_loss[4], g_loss[0]))
+        print (epoch ," Disc loss: " , str(d_loss) , " | Gen loss: " , str(g_loss))
 
     save_model(generator, discriminator, combined)
-    sample_images(generator, epoch)
+    #sample_images(generator, epoch)
+
+
 
 def sample_images(generator, epoch):
     r, c = 10, 10
