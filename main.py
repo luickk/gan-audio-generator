@@ -7,7 +7,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
-from model import build_discriminator, build_generator, train, save_model, pre_process_data, build_audio_generator, build_audio_discriminator
+from model import train, save_model, pre_process_data, build_audio_generator, build_audio_discriminator
 from optparse import OptionParser
 import uuid
 from tqdm import tqdm
@@ -73,7 +73,6 @@ def main():
         audio_combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
         train(sr_training, y_train, X_train, audio_generator, audio_discriminator, audio_combined, epochs, batch_size)
-
 
 if __name__ == '__main__':
     main()

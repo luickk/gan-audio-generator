@@ -13,6 +13,8 @@ from sys import getsizeof
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
+import uuid
+import os
 
 def build_audio_generator(latent_dim, num_classes, audio_shape):
     model = Sequential()
@@ -30,16 +32,12 @@ def build_audio_generator(latent_dim, num_classes, audio_shape):
     model.summary()
 
     noise = Input(shape=(None, latent_dim,))
-    #label = Input(shape=(1,), dtype='int32')
-    #label_embedding = Flatten()(Embedding(num_classes, 100)(label))
-    #model_input = multiply([noise, label_embedding])
 
     sound = model(noise)
 
     return Model([noise], sound)
 
 def build_audio_discriminator(audio_shape, num_classes):
-    print(audio_shape)
     model = Sequential()
 
     model.add(Conv1D(32, kernel_size=(2), padding="same", input_shape=audio_shape))
@@ -51,7 +49,6 @@ def build_audio_discriminator(audio_shape, num_classes):
 
     model.summary()
 
-    #model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adadelta(), metrics=['accuracy'])
     audio = Input(shape=audio_shape)
 
     # Extract feature representation
@@ -59,7 +56,6 @@ def build_audio_discriminator(audio_shape, num_classes):
 
     # Determine validity and label of the image
     validity = Dense(1, activation="sigmoid")(features)
-    #label = Dense(num_classes+1, activation="softmax")(features)
 
     return Model(audio, [validity])
 
@@ -84,8 +80,8 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         # Select a random half batch of images
         idx = np.random.randint(0, X_train.shape[0], half_batch)
         audio = X_train[idx]
-        imgs = X_train[idx]
-        #noise = Input(shape=(None, latent_dim,))
+        half_batch_size = int(audio.shape[1]/2)
+
         noise = np.random.normal(0, 1, (1, half_batch, 100))
 
         # The labels of the digits that the generator tries to create an
@@ -95,16 +91,15 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         # Generate a half batch of new images
         gen_imgs = generator.predict([noise])
 
-        valid = np.ones((half_batch, 128596, 1))
-        fake = np.zeros((half_batch, 128596, 1))
+        valid = np.ones((half_batch, half_batch_size, 1))
+        fake = np.zeros((half_batch, half_batch_size, 1))
 
-        # Image labels. 0-9 if image is valid or 10 if it is generated (fake)
         img_labels = y_train[idx]
         fake_labels = 10 * np.ones(half_batch).reshape(-1, 1)
 
 
         # Train the discriminator
-        d_loss_real = discriminator.train_on_batch(imgs, valid)
+        d_loss_real = discriminator.train_on_batch(audio, valid)
         d_loss_fake = discriminator.train_on_batch(gen_imgs, fake)
         d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
 
@@ -113,24 +108,18 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         # ---------------------
 
         # Sample generator input
-        #noise = np.random.normal(0, 1, (batch_size, 100))
         noise = np.random.normal(0, 1, (1, batch_size, 100))
 
-        #valid = np.ones((batch_size, 1))
-        valid = np.ones((1, 128596, 1))
-        # Generator wants discriminator to label the generated images as the intended
-        # digits
-        #sampled_labels = np.random.randint(0, 10, batch_size).reshape(-1, 1)
+        valid = np.ones((1, half_batch_size, 1))
 
-        print(noise.shape)
-        print(valid.shape)
         # Train the generator
         g_loss = combined.train_on_batch(noise, valid)
 
         # Plot the progress
         print (epoch ," Disc loss: " , str(d_loss) , " | Gen loss: " , str(g_loss))
 
-    save_model(generator, discriminator, combined)
+    model_uuid = save_model(generator, discriminator, combined)
+    print('Model id: ' + model_uuid)
     #sample_images(generator, epoch)
 
 
@@ -158,15 +147,21 @@ def sample_images(generator, epoch):
 
 def save_model(generator, discriminator, combined):
 
+    model_uuid = str(uuid.uuid1())
     def save(model, model_name):
-        model_path = "saved_model/"+model_name+".json"
-        weights_path = "saved_model/"+model_name+"_weights.hdf5"
+        model_path = "saved_model/"+model_name+"/model.json"
+        weights_path = "saved_model/"+model_name+"/model_weights.hdf5"
+        if not os.path.exists(model_path) or not os.path.exists(weights_path):
+            os.makedirs(os.path.dirname(model_path))
+
         options = {"file_arch": model_path,
                     "file_weight": weights_path}
         json_string = model.to_json()
         open(options['file_arch'], 'w').write(json_string)
         model.save_weights(options['file_weight'])
 
-    save(generator, "mnist_acgan_generator")
-    save(discriminator, "mnist_acgan_discriminator")
-    save(combined, "mnist_acgan_adversarial")
+    save(generator, model_uuid)
+    save(discriminator, model_uuid)
+    save(combined, model_uuid)
+
+    return model_uuid
