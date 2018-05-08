@@ -50,23 +50,3 @@ def get_audio(filename):
     audio = audio / (audio.max() - audio.min())
     audio = (audio - 0.5) * 2
     return sr, audio
-
-def get_audio_from_model(model, sr, duration, seed_audio):
-    print ('Generating audio...')
-    new_audio = np.zeros((sr * duration))
-    curr_sample_idx = 0
-    while curr_sample_idx < new_audio.shape[0]:
-        distribution = np.array(model.predict(seed_audio.reshape(1, frame_size, 1)), dtype=float).reshape(256)
-        distribution /= distribution.sum().astype(float)
-        predicted_val = np.random.choice(range(256), p=distribution)
-        ampl_val_8 = ((((predicted_val) / 255.0) - 0.5) * 2.0)
-        ampl_val_16 = (np.sign(ampl_val_8) * (1/256.0) * ((1 + 256.0)**abs(ampl_val_8) - 1)) * 2**15
-        new_audio[curr_sample_idx] = ampl_val_16
-        seed_audio[-1] = ampl_val_16
-        seed_audio[:-1] = seed_audio[1:]
-        pc_str = str(round(100*curr_sample_idx/float(new_audio.shape[0]), 2))
-        sys.stdout.write('Percent complete: ' + pc_str + '\r')
-        sys.stdout.flush()
-        curr_sample_idx += 1
-    print ('Audio generated.')
-    return new_audio.astype(np.int16)

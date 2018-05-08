@@ -29,7 +29,7 @@ def main():
 
     batch_size = 2
 
-    epochs = 100
+    epochs = 10
 
     (options, args) = parser.parse_args()
 

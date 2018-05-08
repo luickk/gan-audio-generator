@@ -10,6 +10,8 @@ from keras.optimizers import Adam
 from optparse import OptionParser
 from data_proc.data_proc import get_audio_from_files
 from sys import getsizeof
+from scipy.io.wavfile import read, write
+
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
@@ -120,7 +122,22 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
 
     model_uuid = save_model(generator, discriminator, combined)
     print('Model id: ' + model_uuid)
-    #sample_images(generator, epoch)
+    new_audio = get_audio_from_model(generator, sr_training, 5, X_train, audio.shape[1])
+    print(new_audio)
+    write("test.wav", sr_training, new_audio)
+
+
+def get_audio_from_model(model, sr, duration, seed_audio, frame_size):
+    print ('Generating audio...')
+    new_audio = np.zeros((sr * duration))
+    curr_sample_idx = 0
+    pred_audio = model.predict(np.random.normal(0, 1, (1, 1, 100)))
+    pred_audio = pred_audio.reshape(pred_audio.shape[1])
+    while curr_sample_idx < new_audio.shape[0]:
+        new_audio[curr_sample_idx] = pred_audio[curr_sample_idx]
+        curr_sample_idx += 1
+    print ('Audio generated.')
+    return new_audio.astype(np.float)
 
 
 
