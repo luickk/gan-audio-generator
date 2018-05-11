@@ -7,7 +7,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
-from model import train, save_model, pre_process_data, build_audio_generator, build_audio_discriminator
+from model import train, save_model, pre_process_data, build_audio_generator, build_audio_discriminator, pre_process_data_rl
 from optparse import OptionParser
 import uuid
 from tqdm import tqdm
@@ -34,31 +34,36 @@ def main():
     (options, args) = parser.parse_args()
 
     if options.mode == 'train':
-        sr_training, y_train, X_train_raw = pre_process_data(batch_size)
+        frame_size = 2048
+        frame_shift = 128
+        sr_training, X_train, Y_train  = pre_process_data_rl(batch_size, frame_size, frame_shift)
 
         num_classes = 1
 
         latent_dim = 100
 
         # reshaping array
-        X_train = X_train_raw.reshape(X_train_raw.shape[0],X_train_raw.shape[1], 1)
-        audio_shape = (X_train.shape[1],1)
+        #X_train = X_train_raw.reshape(X_train_raw.shape[0],X_train_raw.shape[1], 1)
+
+        audio_shape = (Y_train.shape)
+        audio_shape_disc = (frame_size,Y_train.shape[2])
 
         optimizer = Adam(0.0002, 0.5)
         losses = ['binary_crossentropy']
 
         # Build and compile the discriminator
-        audio_discriminator = build_audio_discriminator(audio_shape, num_classes)
+        audio_discriminator = build_audio_discriminator(audio_shape_disc)
         audio_discriminator.compile(loss=losses, optimizer=optimizer, metrics=['accuracy'])
 
         # Build the generator
-        audio_generator = build_audio_generator(latent_dim, num_classes, audio_shape)
+        audio_generator = build_audio_generator(frame_size)
 
-        # The generator takes noise and the target label as input
-        noise = Input(shape=(None, latent_dim,))
+        # The generator takes noise
+        #noise = Input(shape=(None, latent_dim,))
+        noise = Input(shape=(frame_size, 1))
 
         audio = audio_generator([noise])
-
+        
         # For the combined model we will only train the generator
         audio_discriminator.trainable = False
 
@@ -72,7 +77,7 @@ def main():
         audio_combined = Model([noise], [audio_valid])
         audio_combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
-        train(sr_training, y_train, X_train, audio_generator, audio_discriminator, audio_combined, epochs, batch_size)
+        train(sr_training, Y_train, X_train, audio_generator, audio_discriminator, audio_combined, epochs, batch_size, frame_size)
 
 if __name__ == '__main__':
     main()

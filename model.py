@@ -8,40 +8,41 @@ from keras.layers.convolutional import UpSampling2D, Conv2D, Conv1D, MaxPooling1
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 from optparse import OptionParser
-from data_proc.data_proc import get_audio_from_files
+from data_proc.data_proc import get_audio_from_files, get_audio_from_files_rl
 from sys import getsizeof
 from scipy.io.wavfile import read, write
+from sklearn.preprocessing import normalize
 
+import sys
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
 import uuid
 import os
 
-def build_audio_generator(latent_dim, num_classes, audio_shape):
+def build_audio_generator(frame_size):
     model = Sequential()
-    model.add(LSTM(512, input_dim=latent_dim, return_sequences=True))
+    model.add(LSTM(512, input_shape=(frame_size, 1), return_sequences=True))
     model.add(Dropout(0.3))
     model.add(LSTM(512, return_sequences=True))
     model.add(Dropout(0.3))
     model.add(LSTM(512))
     model.add(Dense(256))
     model.add(Dropout(0.3))
-    model.add(Dense(audio_shape[0]))
-    model.add(Activation('tanh'))
-    model.add(Reshape((audio_shape[0], 1)))
+    model.add(Dense(256*frame_size))
+    model.add(Activation('softmax'))
+    model.add(Reshape((frame_size, 256)))
 
     model.summary()
 
-    noise = Input(shape=(None, latent_dim,))
+    noise = Input(shape=(frame_size, 1))
 
     sound = model(noise)
 
-    return Model([noise], sound)
+    return Model(noise, sound)
 
-def build_audio_discriminator(audio_shape, num_classes):
+def build_audio_discriminator(audio_shape):
     model = Sequential()
-
     model.add(Conv1D(32, kernel_size=(2), padding="same", input_shape=audio_shape))
     model.add(MaxPooling1D(pool_size=(2)))
     model.add(Dropout(0.25))
@@ -59,7 +60,7 @@ def build_audio_discriminator(audio_shape, num_classes):
     # Determine validity and label of the image
     validity = Dense(1, activation="sigmoid")(features)
 
-    return Model(audio, [validity])
+    return Model(audio, validity)
 
 def pre_process_data(batch_size):
     parent_dir = 'cv-valid-train'
@@ -69,7 +70,14 @@ def pre_process_data(batch_size):
     y_train = y_train.reshape(-1, 1)
     return sr_training, y_train, X_train
 
-def train(sr_training, y_train, X_train, generator, discriminator, combined, epochs, batch_size):
+def pre_process_data_rl(batch_size, frame_size, frame_shift):
+    parent_dir = 'cv-valid-train'
+    tr_sub_dirs_training = 'data'
+    sr_training, y_train, X_train = get_audio_from_files_rl(batch_size, parent_dir, tr_sub_dirs_training, frame_size, frame_shift, minibatch_size=20)
+
+    return sr_training, y_train, X_train
+
+def train(sr_training, y_train, X_train, generator, discriminator, combined, epochs, batch_size, frame_size):
 
     half_batch = int(batch_size / 2)
 
@@ -79,30 +87,31 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         #  Train Discriminator
         # ---------------------
 
-        # Select a random half batch of images
         idx = np.random.randint(0, X_train.shape[0], half_batch)
-        audio = X_train[idx]
+        audio = y_train
+
         half_batch_size = int(audio.shape[1]/2)
 
-        noise = np.random.normal(0, 1, (1, half_batch, 100))
+        audio_frame = audio[:, audio.shape[1]-frame_size: , :]
 
-        # The labels of the digits that the generator tries to create an
-        # image representation of
+        noise = np.random.normal(0, 1, (half_batch, frame_size, 1))
+
         sampled_labels = 1
 
         # Generate a half batch of new images
-        gen_imgs = generator.predict([noise])
+        gen_audio = generator.predict(noise)
 
-        valid = np.ones((half_batch, half_batch_size, 1))
-        fake = np.zeros((half_batch, half_batch_size, 1))
+        valid = np.ones((1, int(frame_size/2), 1))
+
+        fake = np.zeros((1, int(frame_size/2), 1))
 
         img_labels = y_train[idx]
         fake_labels = 10 * np.ones(half_batch).reshape(-1, 1)
 
 
         # Train the discriminator
-        d_loss_real = discriminator.train_on_batch(audio, valid)
-        d_loss_fake = discriminator.train_on_batch(gen_imgs, fake)
+        d_loss_real = discriminator.train_on_batch(audio_frame, valid)
+        d_loss_fake = discriminator.train_on_batch(gen_audio, fake)
         d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
 
         # ---------------------
@@ -110,9 +119,10 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         # ---------------------
 
         # Sample generator input
-        noise = np.random.normal(0, 1, (1, batch_size, 100))
+        #noise = Input(shape=(frame_size, 1))
+        noise = np.random.normal(0, 1, (1, frame_size, 1))
 
-        valid = np.ones((1, half_batch_size, 1))
+        valid = np.ones((1, int(frame_size/2), 1))
 
         # Train the generator
         g_loss = combined.train_on_batch(noise, valid)
@@ -122,7 +132,7 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
 
     model_uuid = save_model(generator, discriminator, combined)
     print('Model id: ' + model_uuid)
-    new_audio = get_audio_from_model(generator, sr_training, 5, X_train, audio.shape[1])
+    new_audio = get_audio_from_model(generator, sr_training, 1, X_train, audio.shape[1])
     print(new_audio)
     write("test.wav", sr_training, new_audio)
 
@@ -131,36 +141,24 @@ def get_audio_from_model(model, sr, duration, seed_audio, frame_size):
     print ('Generating audio...')
     new_audio = np.zeros((sr * duration))
     curr_sample_idx = 0
-    pred_audio = model.predict(np.random.normal(0, 1, (1, 1, 100)))
-    pred_audio = pred_audio.reshape(pred_audio.shape[1])
+
     while curr_sample_idx < new_audio.shape[0]:
-        new_audio[curr_sample_idx] = pred_audio[curr_sample_idx]
+        pred_audio = model.predict(np.random.normal(0, 1, (1, 1, 100)))
+        pred_audio = pred_audio.reshape(pred_audio.shape[1]).clip(0)
+        pred_audio /= pred_audio.sum()
+        range_a = pred_audio.shape[0]
+        predicted_val = np.random.choice(range(range_a), p=pred_audio)
+        ampl_val_8 = ((((predicted_val) / range_a-1) - 0.5) * 2.0)
+        ampl_val_16 = (np.sign(ampl_val_8) * (1/range_a-4) * ((1 + range_a-4)**abs(ampl_val_8) - 1)) * 2**15
+        new_audio[curr_sample_idx] = ampl_val_16
+
+        pc_str = str(round(100*curr_sample_idx/float(new_audio.shape[0]), 2))
+        sys.stdout.write('Percent complete: ' + pc_str + '\r')
+        sys.stdout.flush()
+        #new_audio[curr_sample_idx] = pred_audio[curr_sample_idx]
         curr_sample_idx += 1
     print ('Audio generated.')
-    return new_audio.astype(np.float)
-
-
-
-def sample_images(generator, epoch):
-    r, c = 10, 10
-    noise = np.random.normal(0, 1, (r * c, 100))
-    sampled_labels = np.array([num for _ in range(r) for num in range(c)])
-
-    gen_imgs = generator.predict([noise, sampled_labels])
-
-    # Rescale images 0 - 1
-    gen_imgs = 0.5 * gen_imgs + 0.5
-
-    fig, axs = plt.subplots(r, c)
-    cnt = 0
-    for i in range(r):
-        for j in range(c):
-            axs[i,j].imshow(gen_imgs[cnt,:,:,0], cmap='gray')
-            axs[i,j].axis('off')
-            cnt += 1
-    fig.savefig("images/%d.png" % epoch)
-    print('Creating imgs')
-    plt.close()
+    return np.array(new_audio, dtype=np.int16)
 
 def save_model(generator, discriminator, combined):
 
