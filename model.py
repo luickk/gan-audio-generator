@@ -91,7 +91,7 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         audio = y_train
 
         half_batch_size = int(audio.shape[1]/2)
-
+        print(audio.shape)
         audio_frame = audio[:, audio.shape[1]-frame_size: , :]
 
         noise = np.random.normal(0, 1, (half_batch, frame_size, 1))

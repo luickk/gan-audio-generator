@@ -63,7 +63,7 @@ def main():
         noise = Input(shape=(frame_size, 1))
 
         audio = audio_generator([noise])
-        
+
         # For the combined model we will only train the generator
         audio_discriminator.trainable = False
 

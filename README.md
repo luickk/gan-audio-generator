@@ -30,6 +30,14 @@ Dependencies
 > - matplotlib
 > - librosa
 
+
+Audio Data
+-------------------
+
+Samplerate: 44 kHz <br>
+Audiotype: Mono <br>
+Recommended dataset: Common Voice by Mozilla
+
 Dependency specific issues
 -------------------
 

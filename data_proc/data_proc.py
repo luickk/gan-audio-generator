@@ -68,6 +68,8 @@ def get_audio_from_files_rl(batch_size, parent_dir, sub_dirs, frame_size, frame_
             if i + frame_size >= audio_len:
                 break
             temp = audio[i + frame_size]
+            if len(temp.shape) > 0:
+                print('Mono audio data as input required, no stereo!')
             target_val = int((np.sign(temp) * (np.log(1 + 256*abs(temp)) / (np.log(1+256))) + 1)/2.0 * 255)
 
             X_temp.append(frame.reshape(frame_size, 1))
