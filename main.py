@@ -7,7 +7,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
-from model import train, save_model, pre_process_data, build_audio_generator, build_audio_discriminator, pre_process_data_rl
+from model import train, save_model, pre_process_data, build_audio_generator, build_audio_discriminator
 from optparse import OptionParser
 import uuid
 from tqdm import tqdm
@@ -29,21 +29,19 @@ def main():
 
     batch_size = 2
 
-    epochs = 10
+    epochs = 2
 
     (options, args) = parser.parse_args()
+
+    training_data_path = 'data/cv-valid-train/*.wav'
 
     if options.mode == 'train':
         frame_size = 2048
         frame_shift = 128
-        sr_training, X_train, Y_train  = pre_process_data_rl(batch_size, frame_size, frame_shift)
+        sr_training, X_train, Y_train  = pre_process_data(training_data_path, batch_size, frame_size, frame_shift)
 
         num_classes = 1
 
-        latent_dim = 100
-
-        # reshaping array
-        #X_train = X_train_raw.reshape(X_train_raw.shape[0],X_train_raw.shape[1], 1)
 
         audio_shape = (Y_train.shape)
         audio_shape_disc = (frame_size,Y_train.shape[2])
@@ -59,7 +57,6 @@ def main():
         audio_generator = build_audio_generator(frame_size)
 
         # The generator takes noise
-        #noise = Input(shape=(None, latent_dim,))
         noise = Input(shape=(frame_size, 1))
 
         audio = audio_generator([noise])
@@ -67,9 +64,7 @@ def main():
         # For the combined model we will only train the generator
         audio_discriminator.trainable = False
 
-        # The discriminator takes generated image as input and determines validity
-        # and the label of that image
-
+        # The discriminator takes generated audio as input and determines validity
         audio_valid = audio_discriminator(audio)
 
         # The combined model  (stacked generator and discriminator) takes

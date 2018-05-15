@@ -8,7 +8,7 @@ from keras.layers.convolutional import UpSampling2D, Conv2D, Conv1D, MaxPooling1
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 from optparse import OptionParser
-from data_proc.data_proc import get_audio_from_files, get_audio_from_files_rl
+from data_proc.data_proc import get_audio_from_files
 from sys import getsizeof
 from scipy.io.wavfile import read, write
 from sklearn.preprocessing import normalize
@@ -57,12 +57,12 @@ def build_audio_discriminator(audio_shape):
     # Extract feature representation
     features = model(audio)
 
-    # Determine validity and label of the image
+    # Determine validity and label of the audio
     validity = Dense(1, activation="sigmoid")(features)
 
     return Model(audio, validity)
 
-def pre_process_data(batch_size):
+def pre_process_datasad(batch_size):
     parent_dir = 'cv-valid-train'
     tr_sub_dirs_training = 'data'
     sr_training, y_train, X_train = get_audio_from_files(batch_size, parent_dir, tr_sub_dirs_training)
@@ -70,10 +70,10 @@ def pre_process_data(batch_size):
     y_train = y_train.reshape(-1, 1)
     return sr_training, y_train, X_train
 
-def pre_process_data_rl(batch_size, frame_size, frame_shift):
+def pre_process_data(path, batch_size, frame_size, frame_shift):
     parent_dir = 'cv-valid-train'
     tr_sub_dirs_training = 'data'
-    sr_training, y_train, X_train = get_audio_from_files_rl(batch_size, parent_dir, tr_sub_dirs_training, frame_size, frame_shift, minibatch_size=20)
+    sr_training, y_train, X_train = get_audio_from_files(path, batch_size, frame_size, frame_shift, minibatch_size=20)
 
     return sr_training, y_train, X_train
 
@@ -91,7 +91,7 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         audio = y_train
 
         half_batch_size = int(audio.shape[1]/2)
-        print(audio.shape)
+
         audio_frame = audio[:, audio.shape[1]-frame_size: , :]
 
         noise = np.random.normal(0, 1, (half_batch, frame_size, 1))
@@ -105,7 +105,6 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
 
         fake = np.zeros((1, int(frame_size/2), 1))
 
-        img_labels = y_train[idx]
         fake_labels = 10 * np.ones(half_batch).reshape(-1, 1)
 
 
@@ -119,7 +118,6 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
         # ---------------------
 
         # Sample generator input
-        #noise = Input(shape=(frame_size, 1))
         noise = np.random.normal(0, 1, (1, frame_size, 1))
 
         valid = np.ones((1, int(frame_size/2), 1))
@@ -132,31 +130,38 @@ def train(sr_training, y_train, X_train, generator, discriminator, combined, epo
 
     model_uuid = save_model(generator, discriminator, combined)
     print('Model id: ' + model_uuid)
-    new_audio = get_audio_from_model(generator, sr_training, 1, X_train, audio.shape[1])
-    print(new_audio)
+    new_audio = get_audio_from_model(generator, sr_training, 1, X_train, frame_size)
     write("test.wav", sr_training, new_audio)
 
 
 def get_audio_from_model(model, sr, duration, seed_audio, frame_size):
     print ('Generating audio...')
+    print ('Sample rate: ' + str(sr))
     new_audio = np.zeros((sr * duration))
     curr_sample_idx = 0
-
     while curr_sample_idx < new_audio.shape[0]:
-        pred_audio = model.predict(np.random.normal(0, 1, (1, 1, 100)))
-        pred_audio = pred_audio.reshape(pred_audio.shape[1]).clip(0)
-        pred_audio /= pred_audio.sum()
-        range_a = pred_audio.shape[0]
-        predicted_val = np.random.choice(range(range_a), p=pred_audio)
-        ampl_val_8 = ((((predicted_val) / range_a-1) - 0.5) * 2.0)
-        ampl_val_16 = (np.sign(ampl_val_8) * (1/range_a-4) * ((1 + range_a-4)**abs(ampl_val_8) - 1)) * 2**15
-        new_audio[curr_sample_idx] = ampl_val_16
+        pred_audio = model.predict(np.random.normal(0, 1, (1, frame_size, 1)))
+        for i in range(pred_audio.shape[1]):
+            curr_sample_idx += 1
+            if curr_sample_idx > len(new_audio)-1:
+                print('Exiting loop')
+                break
+            pred_audio_sample = pred_audio[0,i,:]
 
-        pc_str = str(round(100*curr_sample_idx/float(new_audio.shape[0]), 2))
-        sys.stdout.write('Percent complete: ' + pc_str + '\r')
-        sys.stdout.flush()
-        #new_audio[curr_sample_idx] = pred_audio[curr_sample_idx]
-        curr_sample_idx += 1
+            pred_audio_sample = pred_audio_sample.reshape(256)
+            pred_audio_sample /= pred_audio_sample.sum().astype(float)
+            predicted_val = np.random.choice(range(256), p=pred_audio_sample)
+            ampl_val_8 = ((((predicted_val) / 255.0) - 0.5) * 2.0)
+            ampl_val_16 = (np.sign(ampl_val_8) * (1/256.0) * ((1 + 256.0)**abs(ampl_val_8) - 1)) * 2**15
+
+            new_audio[curr_sample_idx] = ampl_val_16
+
+            pc_str = str(round(100*curr_sample_idx/float(new_audio.shape[0]), 2))
+
+            sys.stdout.write('Percent complete: ' + pc_str + '\r')
+            sys.stdout.flush()
+
+
     print ('Audio generated.')
     return np.array(new_audio, dtype=np.int16)
 

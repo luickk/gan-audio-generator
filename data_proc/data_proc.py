@@ -23,27 +23,7 @@ def frame_generator(sr, audio, frame_size):
                 label_files.append(1)
     return np.array(temp_data), np.array(label_files)
 
-def get_audio_from_files(batch_size, parent_dir, sub_dirs):
-
-    file_counter = 0
-    audio_files = []
-    sr = 0
-    for fn in glob.iglob('data/cv-valid-train/*.wav'):
-        label = ntpath.basename(fn)
-        file_counter += 1
-        sr, audio = get_audio(fn);
-        audio_files = np.concatenate([audio_files, audio], axis=0)
-        print('Reading: ' + str(file_counter) + ' of ' + str(batch_size))
-        if file_counter==batch_size: break;
-
-    # divide audio length by batch size(1 = 1 .wav file)
-    frame_size = round(audio_files.shape[0] / batch_size)
-    # returns array with audio samples
-    frames, label_files = frame_generator(sr, audio_files, frame_size)
-
-    return sr, label_files, frames
-
-def get_audio_from_files_rl(batch_size, parent_dir, sub_dirs, frame_size, frame_shift, minibatch_size=20):
+def get_audio_from_files(data_path, batch_size, frame_size, frame_shift, minibatch_size=20):
 
     file_counter = 0
     sr = 0
@@ -78,9 +58,6 @@ def get_audio_from_files_rl(batch_size, parent_dir, sub_dirs, frame_size, frame_
             X_temps = np.array(X_temp)
             Y_temps = np.array(Y_temp)
 
-            #print(X_temps.shape)
-            #print(Y_temps.shape)
-
         X.append(X_temp)
         Y.append(Y_temp)
 
@@ -90,9 +67,6 @@ def get_audio_from_files_rl(batch_size, parent_dir, sub_dirs, frame_size, frame_
 
     X = np.array(X)
     Y = np.array(Y)
-
-    print(X.shape)
-    print(Y.shape)
 
     return sr, X, Y
 

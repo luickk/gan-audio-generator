@@ -12,7 +12,7 @@ The aim is to generate audio based on the [Common Voice](https://voice.mozilla.o
 	> - Install Dependencies
 
 #### <i class="icon-ccw"></i> Training
-
+  > - Convert .<format> files to .wav files using tools/reformat.py
 	> - python main.py -m train
 
 #### <i class="icon-right-big"></i> Testing
@@ -34,9 +34,16 @@ Dependencies
 Audio Data
 -------------------
 
-Samplerate: 44 kHz <br>
+Samplerate: 44,1 kHz <br>
 Audiotype: Mono <br>
 Recommended dataset: Common Voice by Mozilla
+File format: .wav
+
+Inspired Paper
+-------------------
+
+[Continuous recurrent neural networks with adversarial training](https://arxiv.org/pdf/1611.09904.pdf) by <br>
+Olof Mogren Chalmers *University of Technology, Sweden*
 
 Dependency specific issues
 -------------------
