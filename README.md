@@ -12,8 +12,8 @@ The aim is to generate audio based on the [Common Voice](https://voice.mozilla.o
 	> - Install Dependencies
 
 #### <i class="icon-ccw"></i> Training
-  > - Convert .<format> files to .wav files using tools/reformat.py
-	> - python main.py -m train
+  > - Convert .<format> files to .wav files using tools/reformat.py <br>
+  > - python main.py -m train
 
 #### <i class="icon-right-big"></i> Testing
 
@@ -36,7 +36,7 @@ Audio Data
 
 Samplerate: 44,1 kHz <br>
 Audiotype: Mono <br>
-Recommended dataset: Common Voice by Mozilla
+Recommended dataset: Common Voice by Mozilla<br>
 File format: .wav
 
 Inspired Paper
