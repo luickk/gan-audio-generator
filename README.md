@@ -29,7 +29,10 @@ Dependencies
 > - Keras
 > - matplotlib
 > - librosa
-
+> - OptionParser
+> - uuid
+> - tqdm
+> - tensorflow
 
 Audio Data
 -------------------
