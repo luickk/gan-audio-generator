@@ -6,7 +6,6 @@ import ntpath
 import tqdm
 import matplotlib.pyplot as plt
 
-from math import sqrt
 from scipy.io.wavfile import read, write
 from subprocess import check_output
 

@@ -7,7 +7,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
-from model import train, save_model, pre_process_data, build_audio_generator, build_audio_discriminator
+from model import train, save_model, build_audio_generator, build_audio_discriminator
 from optparse import OptionParser
 import uuid
 from tqdm import tqdm
@@ -27,24 +27,19 @@ def main():
     # Only required for labeling - Enter Model id here
     parser.add_option('-u', '--uid', help='enter model id here')
 
-    batch_size = 2
-
-    epochs = 2
+    epochs = 10
 
     (options, args) = parser.parse_args()
 
     training_data_path = 'data/cv-valid-train/*.wav'
 
     if options.mode == 'train':
-        frame_size = 2048
+        frame_size = 500
         frame_shift = 128
-        sr_training, X_train, Y_train  = pre_process_data(training_data_path, batch_size, frame_size, frame_shift)
 
         num_classes = 1
 
-
-        audio_shape = (Y_train.shape)
-        audio_shape_disc = (frame_size,Y_train.shape[2])
+        audio_shape_disc = (frame_size,256)
 
         optimizer = Adam(0.0002, 0.5)
         losses = ['binary_crossentropy']
@@ -72,7 +67,7 @@ def main():
         audio_combined = Model([noise], [audio_valid])
         audio_combined.compile(loss='binary_crossentropy', optimizer=optimizer)
 
-        train(sr_training, Y_train, X_train, audio_generator, audio_discriminator, audio_combined, epochs, batch_size, frame_size)
+        train(audio_generator, audio_discriminator, audio_combined, epochs, frame_size, frame_shift)
 
 if __name__ == '__main__':
     main()
