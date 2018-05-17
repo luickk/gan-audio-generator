@@ -75,7 +75,6 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
     sr_training = 0
 
     for fn in glob.iglob('data/cv-valid-train/*.wav'):
-
         label = ntpath.basename(fn)
         file_counter += 1
         sr, audio = get_audio(fn);
@@ -126,8 +125,6 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
 
                 noise = np.random.normal(0, 1, (1, frame_size, 1))
 
-                sampled_labels = 1
-
                 # Generate a half batch of new images
                 gen_audio = generator.predict(noise)
 
@@ -141,20 +138,11 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
                 d_loss_fake = discriminator.train_on_batch(gen_audio, fake)
                 d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
 
-                # ---------------------
-                #  Train Generator
-                # ---------------------
-
-                # Sample generator input
-                noise = np.random.normal(0, 1, (1, frame_size, 1))
-
-                valid = np.ones((1, int(frame_size/2), 1))
-
                 # Train the generator
                 g_loss = combined.train_on_batch(noise, valid)
 
                 # Plot the progress
-                print(str(epoch_counter) + '/' + str(epochs) + ' > Discriminator loss: ' + str(d_loss) + ' | Generator loss: ' +  str(g_loss))
+                print(str(epoch_counter) + '/' + str(epochs) + ' > Discriminator loss: ' + str(d_loss[0]) + ' | Generator loss: ' +  str(g_loss))
             else:
                 print('Not enough data frames per file, decrease frame_size!')
                 break

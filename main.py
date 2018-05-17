@@ -27,7 +27,7 @@ def main():
     # Only required for labeling - Enter Model id here
     parser.add_option('-u', '--uid', help='enter model id here')
 
-    epochs = 10
+    epochs = 10000
 
     (options, args) = parser.parse_args()
 
@@ -54,7 +54,7 @@ def main():
         # The generator takes noise
         noise = Input(shape=(frame_size, 1))
 
-        audio = audio_generator([noise])
+        audio = audio_generator(noise)
 
         # For the combined model we will only train the generator
         audio_discriminator.trainable = False
@@ -64,8 +64,8 @@ def main():
 
         # The combined model  (stacked generator and discriminator) takes
         # noise as input => generates audio => determines validity
-        audio_combined = Model([noise], [audio_valid])
-        audio_combined.compile(loss='binary_crossentropy', optimizer=optimizer)
+        audio_combined = Model(noise, audio_valid)
+        audio_combined.compile(loss=losses, optimizer=optimizer)
 
         train(audio_generator, audio_discriminator, audio_combined, epochs, frame_size, frame_shift)
 
