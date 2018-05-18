@@ -26,11 +26,11 @@ plt.style.use('ggplot')
 
 def build_audio_generator(frame_size):
     model = Sequential()
-    model.add(LSTM(512, input_shape=(frame_size, 1), return_sequences=True))
+    model.add(LSTM(256, input_shape=(frame_size, 1), return_sequences=True))
     model.add(Dropout(0.3))
-    model.add(LSTM(512, return_sequences=True))
+    model.add(LSTM(256, return_sequences=True))
     model.add(Dropout(0.3))
-    model.add(LSTM(512))
+    model.add(LSTM(256))
     model.add(Dense(256))
     model.add(Dropout(0.3))
     model.add(Dense(256*frame_size))
@@ -125,6 +125,7 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
 
                 noise = np.random.normal(0, 1, (1, frame_size, 1))
 
+
                 # Generate a half batch of new images
                 gen_audio = generator.predict(noise)
 
@@ -134,8 +135,8 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
 
 
                 # Train the discriminator
-                d_loss_real = discriminator.train_on_batch(audio_frame, valid)
-                d_loss_fake = discriminator.train_on_batch(gen_audio, fake)
+                d_loss_real = discriminator.train_on_batch(gen_audio, valid)
+                d_loss_fake = discriminator.train_on_batch(audio_frame, fake)
                 d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
 
                 # Train the generator

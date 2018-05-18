@@ -27,7 +27,7 @@ def main():
     # Only required for labeling - Enter Model id here
     parser.add_option('-u', '--uid', help='enter model id here')
 
-    epochs = 10000
+    epochs = 50
 
     (options, args) = parser.parse_args()
 
@@ -36,7 +36,6 @@ def main():
     if options.mode == 'train':
         frame_size = 500
         frame_shift = 128
-
         num_classes = 1
 
         audio_shape_disc = (frame_size,256)
