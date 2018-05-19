@@ -17,12 +17,12 @@ import glob
 import os
 import sys
 import tensorflow as tf
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as pyplot
 import numpy as np
 import uuid
 import ntpath
 
-plt.style.use('ggplot')
+pyplot.style.use('ggplot')
 
 def build_audio_generator(frame_size):
     model = Sequential()
@@ -73,6 +73,8 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
     epoch_counter = 0
     sr = 0
     sr_training = 0
+    g_metrics = []
+    d_metrics = []
 
     for fn in glob.iglob('data/cv-valid-train/*.wav'):
         label = ntpath.basename(fn)
@@ -135,20 +137,23 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
 
 
                 # Train the discriminator
-                d_loss_real = discriminator.train_on_batch(gen_audio, valid)
-                d_loss_fake = discriminator.train_on_batch(audio_frame, fake)
-                d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+                d_acc_real = discriminator.train_on_batch(gen_audio, valid)
+                d_acc_fake = discriminator.train_on_batch(audio_frame, fake)
+                d_loss = 0.5 * np.add(d_acc_real, d_acc_fake)
+
+                d_metrics.append(d_loss)
 
                 # Train the generator
                 g_loss = combined.train_on_batch(noise, valid)
+                g_metrics.append(g_loss)
 
                 # Plot the progress
-                print(str(epoch_counter) + '/' + str(epochs) + ' > Discriminator loss: ' + str(d_loss[0]) + ' | Generator loss: ' +  str(g_loss))
+                print(str(epoch_counter) + '/' + str(epochs) + ' > Discriminator loss: ' + str(d_loss) + ' | Generator loss: ' +  str(g_loss))
             else:
                 print('Not enough data frames per file, decrease frame_size!')
                 break
 
-    model_uuid = save_model(generator, discriminator, combined)
+    model_uuid = save_model(generator, discriminator, combined, g_metrics, d_metrics)
     print('Model id: ' + model_uuid)
     new_audio = get_audio_from_model(generator, sr_training, 1, frame_size)
     write("test.wav", sr_training, new_audio)
@@ -185,9 +190,10 @@ def get_audio_from_model(model, sr, duration, frame_size):
     print ('Audio generated.')
     return np.array(new_audio, dtype=np.int16)
 
-def save_model(generator, discriminator, combined):
+def save_model(generator, discriminator, combined, g_metrics, d_metrics):
 
     model_uuid = str(uuid.uuid1())
+    model_path = ""
     def save(model, model_name):
         model_path = "saved_model/"+model_name+"/model.json"
         weights_path = "saved_model/"+model_name+"/model_weights.hdf5"
@@ -203,5 +209,9 @@ def save_model(generator, discriminator, combined):
     save(generator, model_uuid)
     save(discriminator, model_uuid)
     save(combined, model_uuid)
+    pyplot.plot(g_metrics, label="G loss")
+    pyplot.plot(d_metrics, label="D loss")
+    pyplot.legend(loc='upper left')
+    pyplot.savefig('saved_model/' + model_uuid + '/graph.png')
 
     return model_uuid
