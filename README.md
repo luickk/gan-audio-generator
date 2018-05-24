@@ -33,6 +33,8 @@ Dependencies
 > - uuid
 > - tqdm
 > - tensorflow
+> - scipy
+> - sklearn 
 
 Audio Data
 -------------------
