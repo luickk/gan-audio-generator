@@ -1,0 +1,10 @@
+keras
+librosa
+uuid
+OptionParser
+matplotlib
+numpy
+tensorflow
+tqdm
+sklearn
+scipy
