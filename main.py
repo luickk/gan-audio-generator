@@ -7,16 +7,15 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
-from model import train, save_model, build_audio_generator, build_audio_discriminator
 from optparse import OptionParser
+from model import train, save_model, build_audio_generator, build_audio_discriminator
+
 import uuid
-from tqdm import tqdm
 import librosa
 import tensorflow as tf
-
 import matplotlib.pyplot as plt
-
 import numpy as np
+import sys, os
 
 def main():
 

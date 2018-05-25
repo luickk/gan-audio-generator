@@ -13,6 +13,7 @@ from sys import getsizeof
 from scipy.io.wavfile import read, write
 from sklearn.preprocessing import normalize
 
+import sys, os
 import glob
 import os
 import sys
