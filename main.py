@@ -43,6 +43,8 @@ def main():
 
         audio_shape_disc = (frame_size,256)
 
+	audio_shape_gen = (256, 1)	
+
         optimizer = Adam(0.0002, 0.5)
 
         # Build and compile the discriminator
@@ -50,10 +52,10 @@ def main():
         audio_discriminator.compile(loss='binary_crossentropy', optimizer=optimizer)
 
         # Build the generator
-        audio_generator = build_audio_generator(frame_size)
+        audio_generator = build_audio_generator(audio_shape_gen, frame_size)
 
         # The generator takes noise
-        noise = Input(shape=(frame_size, 1))
+        noise = Input(shape=audio_shape_gen)
 
         audio = audio_generator(noise)
 

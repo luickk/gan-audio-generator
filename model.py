@@ -1,4 +1,3 @@
-
 from __future__ import print_function, division
 
 from keras.datasets import mnist
@@ -24,9 +23,9 @@ import uuid
 import ntpath
 import matplotlib.pyplot as pyplot
 
-def build_audio_generator(frame_size):
+def build_audio_generator(audio_shape, frame_size):
     model = Sequential()
-    model.add(LSTM(256, input_shape=(frame_size, 1), return_sequences=True))
+    model.add(LSTM(256, input_shape=np.array(audio_shape), return_sequences=True))
     model.add(Dropout(0.3))
     model.add(LSTM(256, return_sequences=True))
     model.add(Dropout(0.3))
@@ -39,7 +38,7 @@ def build_audio_generator(frame_size):
 
     model.summary()
 
-    noise = Input(shape=(frame_size, 1))
+    noise = Input(shape=audio_shape)
 
     sound = model(noise)
 
@@ -125,7 +124,7 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
                 audio_frame = audio[:, s:s+500, :]
                 if audio_frame.shape[1]<frame_size: break;
 
-                noise = np.random.normal(0, 1, (1, frame_size, 1))
+                noise = np.random.normal(0, 1, (1, 256, 1))
 
 
                 # Generate a half batch of new images
@@ -165,7 +164,7 @@ def get_audio_from_model(model, sr, duration, frame_size):
     new_audio = np.zeros((sr * duration))
     curr_sample_idx = 0
     while curr_sample_idx < new_audio.shape[0]:
-        pred_audio = model.predict(np.random.normal(0, 1, (1, frame_size, 1)))
+        pred_audio = model.predict(np.random.normal(0, 1, (1, 256, 1)))
         for i in range(pred_audio.shape[1]):
             curr_sample_idx += 1
             if curr_sample_idx > len(new_audio)-1:
