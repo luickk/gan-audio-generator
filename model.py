@@ -210,10 +210,10 @@ def save_model(generator, discriminator, combined, g_metrics, d_metrics):
     save(combined, model_uuid)
     if os.environ.get('DISPLAY','') == '':
         print('no display found')
-    else:	
-	pyplot.plot(g_metrics, label="G loss")
-    	pyplot.plot(d_metrics, label="D loss")
-    	pyplot.legend(loc='upper left')
-    	pyplot.savefig('saved_model/' + model_uuid + '/graph.png')
+    else:
+        pyplot.plot(g_metrics, label="G loss")
+        pyplot.plot(d_metrics, label="D loss")
+        pyplot.legend(loc='upper left')
+        pyplot.savefig('saved_model/' + model_uuid + '/graph.png')
 
     return model_uuid
