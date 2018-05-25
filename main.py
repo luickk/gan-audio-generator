@@ -13,8 +13,9 @@ from model import train, save_model, build_audio_generator, build_audio_discrimi
 import uuid
 import librosa
 import tensorflow as tf
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import sys, os
 
 #turn off debug information
@@ -29,7 +30,7 @@ def main():
     # Only required for labeling - Enter Model id here
     parser.add_option('-u', '--uid', help='enter model id here')
 
-    epochs = 1000
+    epochs = 10
 
     (options, args) = parser.parse_args()
 

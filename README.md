@@ -35,6 +35,7 @@ Dependencies
 > - tensorflow
 > - scipy
 > - sklearn 
+> - h5py
 
 Audio Data
 -------------------

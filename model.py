@@ -1,3 +1,4 @@
+
 from __future__ import print_function, division
 
 from keras.datasets import mnist
@@ -18,12 +19,10 @@ import glob
 import os
 import sys
 import tensorflow as tf
-import matplotlib.pyplot as pyplot
 import numpy as np
 import uuid
 import ntpath
-
-pyplot.style.use('ggplot')
+import matplotlib.pyplot as pyplot
 
 def build_audio_generator(frame_size):
     model = Sequential()
@@ -157,7 +156,7 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
     model_uuid = save_model(generator, discriminator, combined, g_metrics, d_metrics)
     print('Model id: ' + model_uuid)
     new_audio = get_audio_from_model(generator, sr_training, 1, frame_size)
-    write("test.wav", sr_training, new_audio)
+    write('saved_model/'+model_uuid+'/output.wav', sr_training, new_audio)
 
 
 def get_audio_from_model(model, sr, duration, frame_size):
@@ -192,7 +191,6 @@ def get_audio_from_model(model, sr, duration, frame_size):
     return np.array(new_audio, dtype=np.int16)
 
 def save_model(generator, discriminator, combined, g_metrics, d_metrics):
-
     model_uuid = str(uuid.uuid1())
     model_path = ""
     def save(model, model_name):
@@ -210,9 +208,12 @@ def save_model(generator, discriminator, combined, g_metrics, d_metrics):
     save(generator, model_uuid)
     save(discriminator, model_uuid)
     save(combined, model_uuid)
-    pyplot.plot(g_metrics, label="G loss")
-    pyplot.plot(d_metrics, label="D loss")
-    pyplot.legend(loc='upper left')
-    pyplot.savefig('saved_model/' + model_uuid + '/graph.png')
+    if os.environ.get('DISPLAY','') == '':
+        print('no display found')
+    else:	
+	pyplot.plot(g_metrics, label="G loss")
+    	pyplot.plot(d_metrics, label="D loss")
+    	pyplot.legend(loc='upper left')
+    	pyplot.savefig('saved_model/' + model_uuid + '/graph.png')
 
     return model_uuid
