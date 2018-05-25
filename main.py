@@ -17,6 +17,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys, os
 
+#turn off debug information
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 def main():
 
     parser = OptionParser()
