@@ -60,7 +60,7 @@ def main():
         audio = audio_generator(noise)
 
         # For the combined model we will only train the generator
-        audio_discriminator.trainable = False
+        # audio_discriminator.trainable = False
 
         # The discriminator takes generated audio as input and determines validity
         audio_valid = audio_discriminator(audio)
