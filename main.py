@@ -43,7 +43,7 @@ def main():
 
         audio_shape_disc = (frame_size,256)
 
-	audio_shape_gen = (256, 1)	
+        audio_shape_gen = (256, 1)
 
         optimizer = Adam(0.0002, 0.5)
 
