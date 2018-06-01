@@ -136,8 +136,8 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
 
 
                 # Train the discriminator
-                d_acc_real = discriminator.train_on_batch(gen_audio, valid)
-                d_acc_fake = discriminator.train_on_batch(audio_frame, fake)
+                d_acc_real = discriminator.train_on_batch(audio_frame, valid)
+                d_acc_fake = discriminator.train_on_batch(gen_audio, fake)
                 d_loss = 0.5 * np.add(d_acc_real, d_acc_fake)
 
                 d_metrics.append(d_loss)
