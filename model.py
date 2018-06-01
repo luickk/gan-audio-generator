@@ -124,7 +124,7 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
                 audio_frame = audio[:, s:s+500, :]
                 if audio_frame.shape[1]<frame_size: break;
 
-                noise = np.random.normal(0, 1, (1, 256, 1))
+                noise = np.random.normal(0, 1, (1, frame_size, 256))
 
 
                 # Generate a half batch of new images
@@ -164,7 +164,7 @@ def get_audio_from_model(model, sr, duration, frame_size):
     new_audio = np.zeros((sr * duration))
     curr_sample_idx = 0
     while curr_sample_idx < new_audio.shape[0]:
-        pred_audio = model.predict(np.random.normal(0, 1, (1, 256, 1)))
+        pred_audio = model.predict(np.random.normal(0, 1, (1, frame_size, 256)))
         for i in range(pred_audio.shape[1]):
             curr_sample_idx += 1
             if curr_sample_idx > len(new_audio)-1:
