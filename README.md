@@ -1,24 +1,32 @@
 Generative Adversarial Network Audio generator
 ===================
 
-The aim is to generate audio based on the [Common Voice](https://voice.mozilla.org/en/data) dataset using a
+The aim is to generate audio, based on the [Common Voice](https://voice.mozilla.org/en/data) dataset using a
 [Generative adversarial network](https://en.wikipedia.org/wiki/Generative_adversarial_network).
 
 ----------
 
-#### <i class="icon-down-big"></i> Installation
+#### Résumé
 
-	> - Clone Repository
-	> - Install Dependencies
+The projects as its whole works quite good, both generator and discriminator are training and competing
+against each other. But to achieve acceptable results the generator has to be better than the discriminator, which is not he case. 
+Even after 12 Gb of data the discriminator is still way better than the generator which basically means that the generator couldn't 
+imitate the sound samples good enough. The expectable result is a monotonous sough. The inability of the generator to get better
+than the discriminator can be traced back to the data, a image(black-and-white) imitating GAN for examples works with only one 10 value
+per pixel in one image. But one tone(compared to pixel) has 256 16bit values, with a 44 Mhz sample rate, there are a whole of 44000 * 256 * 5 values 
+to change in a 5 Sek sound sample, a img generating has only to change 400 * 400 * 10 values, in a 400x400 img to change.
 
-#### <i class="icon-ccw"></i> Training
-  > - Convert .<format> files to .wav files using tools/reformat.py <br>
-  > - python main.py -m train
+----------
 
-#### <i class="icon-right-big"></i> Testing
+#### Installation
 
-	> - python main.py -u <model ID from trained model here> -i <file name> -m label
+    > - Clone Repository
+    > - Install Dependencies
+    > - Train
 
+#### Training
+    > - Convert .<format> files to .wav files using tools/reformat.py <br>
+    > - python main.py -m train
 
 ----------
 
@@ -60,7 +68,3 @@ Dependency specific issues
     `audioread.NoBackendError` :
     install [ffmpeg](https://ffmpeg.zeranoe.com/builds/) and <br>
     add environment variable for ffmpeg
-
-Example
--------------------
-// TODO
