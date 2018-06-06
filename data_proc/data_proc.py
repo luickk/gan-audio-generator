@@ -27,7 +27,7 @@ def get_audio_from_files(data_path, batch_size, frame_size, frame_shift, minibat
     file_counter = 0
     sr = 0
 
-    for fn in glob.iglob('data/cv-valid-train/*.wav'):
+    for fn in glob.iglob(data_path):
 
         label = ntpath.basename(fn)
         file_counter += 1

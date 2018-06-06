@@ -14,7 +14,7 @@ Even after 12 Gb of data the discriminator is still way better than the generato
 imitate the sound samples good enough. The expectable result is a monotonous sough. The inability of the generator to get better
 than the discriminator can be traced back to the data, a image(black-and-white) imitating GAN for examples works with only one 10 value
 per pixel in one image. But one tone(compared to pixel) has 256 16bit values, with a 44 Mhz sample rate, there are a whole of 44000 * 256 * 5 values 
-to change in a 5 Sek sound sample, a img generating has only to change 400 * 400 * 10 values, in a 400x400 img to change.
+to change in a 5 Sek sound sample, a img generating has only to change 400x400 values, in a 400x400 img to change.
 
 ----------
 

@@ -11,7 +11,6 @@ from optparse import OptionParser
 from data_proc.data_proc import get_audio_from_files, get_audio
 from sys import getsizeof
 from scipy.io.wavfile import read, write
-from sklearn.preprocessing import normalize
 
 import sys, os
 import glob
@@ -65,7 +64,7 @@ def build_audio_discriminator(audio_shape):
 
     return Model(audio, validity)
 
-def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
+def train(data_path, generator, discriminator, combined, epochs, frame_size, frame_shift):
 
 
     file_counter = 0
@@ -75,7 +74,7 @@ def train(generator, discriminator, combined, epochs, frame_size, frame_shift):
     g_metrics = []
     d_metrics = []
 
-    for fn in glob.iglob('data/cv-valid-train/*.wav'):
+    for fn in glob.iglob(data_path):
         label = ntpath.basename(fn)
         file_counter += 1
         sr, audio = get_audio(fn);
@@ -207,7 +206,8 @@ def save_model(generator, discriminator, combined, g_metrics, d_metrics):
     save(generator, model_uuid)
     save(discriminator, model_uuid)
     save(combined, model_uuid)
-    if os.environ.get('DISPLAY','') == '':
+
+    if not os.name == 'nt':
         print('no display found')
     else:
         pyplot.plot(g_metrics, label="G loss")
